@@ -9,7 +9,7 @@
 var config = require('./config');
 
 if (!config.debug && config.oneapm_key) {
-  require('oneapm');
+  require('oneapm'); // 性能监控
 }
 
 require('colors');
@@ -57,17 +57,18 @@ if (config.mini_assets) {
   }
 }
 
+// 获取域名
 var urlinfo = require('url').parse(config.host);
 config.hostname = urlinfo.hostname || config.host;
 
 var app = express();
 
 // configuration in all env
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'html');
-app.engine('html', require('ejs-mate'));
-app.locals._layoutFile = 'layout.html';
-app.enable('trust proxy');
+app.set('views', path.join(__dirname, 'views')); // 定义视图位置
+app.set('view engine', 'html'); // 定义视图引擎
+app.engine('html', require('ejs-mate')); // 使用ejs-mate来解析html
+app.locals._layoutFile = 'layout.html'; // 定义全局_layoutFile
+app.enable('trust proxy'); // 在代理服务器后运行express如Nginx，应如此设置。如果没有如此设置，应用会把代理服务器的IP理解为客户端的IP
 
 // Request logger。请求时间
 app.use(requestLog);
@@ -81,17 +82,17 @@ if (config.debug) {
 if (config.debug) {
   app.use(LoaderConnect.less(__dirname)); // 测试环境用，编译 .less on the fly
 }
-app.use('/public', express.static(staticDir));
-app.use('/agent', proxyMiddleware.proxy);
+app.use('/public', express.static(staticDir)); // 设置静态资源
+app.use('/agent', proxyMiddleware.proxy); // 设置代理？？？
 
 // 通用的中间件
-app.use(require('response-time')());
-app.use(helmet.frameguard('sameorigin'));
+app.use(require('response-time')()); // 在header中定义X-Response-Time
+app.use(helmet.frameguard('sameorigin')); // 防止点击劫持
 app.use(bodyParser.json({limit: '1mb'}));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
-app.use(require('method-override')());
+app.use(require('method-override')()); // 该中间件用于改写客户端请求的谓词，如客户端的form请求无法使用PUT，则可以使用该中间件改写PUT为POST
 app.use(require('cookie-parser')(config.session_secret));
-app.use(compress());
+app.use(compress()); // 压缩
 app.use(session({
   secret: config.session_secret,
   store: new RedisStore({
